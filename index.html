@@ -239,7 +239,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
   }
   function set(k, v) { cfg[k] = clamp(k, v); render(); }
 
-  document.querySelectorAll(".round").forEach((b) => b.addEventListener("click", () => set(b.dataset.k, cfg[b.dataset.k] + +b.dataset.d)));
+  // Snap to the next multiple of the step, so 1 -> 5 -> 10 instead of 1 -> 6 -> 11
+  const stepTo = (v, d) => { const s = Math.abs(d); return d > 0 ? Math.floor(v / s) * s + s : Math.ceil(v / s) * s - s; };
+  document.querySelectorAll(".round").forEach((b) => b.addEventListener("click", () => set(b.dataset.k, stepTo(cfg[b.dataset.k], +b.dataset.d))));
   for (const k of KEYS) {
     $(k).addEventListener("input", (e) => { if (e.target.value !== "") { cfg[k] = clamp(k, e.target.value); render(); } });
     $(k).addEventListener("blur", () => set(k, $(k).value));
