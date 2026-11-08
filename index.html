@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intervalos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one screen, one column. Setup = three big steppers + start; Run = full-bleed phase color with a giant scoreboard countdown. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --fg: #14191f;
+  --muted: #5c6773;
+  --line: #d5dbe2;
+  --work: #ff5a1f;
+  --work-ink: #1a0b03;
+  --rest: #1f8a8a;
+  --rest-ink: #ffffff;
+  --prep: #2b3440;
+  --prep-ink: #ffffff;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640;
+    --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640;
+  --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outline-offset: 2px; }
+
+/* ---------- Setup ---------- */
+.setup {
+  min-height: 100%; box-sizing: border-box;
+  max-width: 460px; margin: 0 auto;
+  padding-block: 24px 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px;
+}
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.brand h1 { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
+.brand .total { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.brand .total b { color: var(--fg); font-weight: 700; }
+
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--line); background: var(--surface);
+  border-radius: 999px; padding: 7px 14px; font-size: 14px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+.steppers { display: flex; flex-direction: column; gap: 10px; }
+.stepper {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  padding: 12px 12px 12px 16px;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+  position: relative; overflow: hidden;
+}
+.stepper::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--c, var(--muted)); }
+.stepper .lab { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stepper .lab span:first-child { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stepper .val { display: flex; align-items: baseline; gap: 4px; }
+.stepper input {
+  width: 3.2ch; border: 0; background: transparent; color: var(--fg); padding: 0;
+  font-family: var(--display); font-weight: 900; font-size: 52px; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper .unit { color: var(--muted); font-weight: 600; font-size: 15px; }
+.stepper .btns { display: flex; gap: 8px; }
+.round {
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--bg);
+  font-size: 28px; font-weight: 500; line-height: 1;
+  display: grid; place-items: center; touch-action: manipulation;
+}
+.round:active { transform: scale(.94); }
+
+.start {
+  margin-top: auto;
+  border: 0; border-radius: 18px; background: var(--work); color: var(--work-ink);
+  font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: .06em; text-transform: uppercase;
+  padding: 18px; touch-action: manipulation;
+}
+.start:active { transform: scale(.98); }
+.hint { margin: 0; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* ---------- Run ---------- */
+.run {
+  position: fixed; inset: 0; z-index: 5;
+  background: var(--phase-bg); color: var(--phase-ink);
+  display: flex; flex-direction: column;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  transition: background-color .35s ease;
+}
+.run.work { --phase-bg: var(--work); --phase-ink: var(--work-ink); }
+.run.rest { --phase-bg: var(--rest); --phase-ink: var(--rest-ink); }
+.run.prep, .run.done { --phase-bg: var(--prep); --phase-ink: var(--prep-ink); }
+.run-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.run-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
+.phase { font-family: var(--display); font-weight: 900; font-size: clamp(36px, 10vw, 64px); letter-spacing: .08em; text-transform: uppercase; line-height: 1; }
+.clock {
+  font-family: var(--display); font-weight: 900; line-height: .85;
+  font-size: min(58vw, 46vh); font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+}
+.next { font-size: 17px; font-weight: 600; opacity: .8; min-height: 1.3em; text-align: center; }
+.bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--phase-ink) 22%, transparent); overflow: hidden; margin-bottom: 18px; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--phase-ink); }
+.ctrls { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 10px; }
+.ctrl {
+  border: 2px solid color-mix(in srgb, var(--phase-ink) 45%, transparent);
+  background: transparent; color: var(--phase-ink);
+  border-radius: 16px; padding: 16px 8px; font-weight: 700; font-size: 17px; touch-action: manipulation;
+}
+.ctrl.main { background: var(--phase-ink); color: var(--phase-bg); border-color: var(--phase-ink); font-size: 20px; }
+.ctrl:active { transform: scale(.97); }
+.paused .clock { animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .paused .clock { animation: none; opacity: .5; } .run { transition: none; } }
+</style>
+</head>
+<body>
+
+<main class="setup" id="setup">
+  <div class="brand">
+    <h1>Intervalos</h1>
+    <div class="total">Total <b id="total">0:00</b></div>
+  </div>
+
+  <div class="presets" id="presets" aria-label="Rápidos">
+    <button class="chip" data-w="35" data-r="15">35 / 15</button>
+    <button class="chip" data-w="40" data-r="20">40 / 20</button>
+    <button class="chip" data-w="45" data-r="15">45 / 15</button>
+    <button class="chip" data-w="20" data-r="10">20 / 10</button>
+    <button class="chip" data-w="60" data-r="30">60 / 30</button>
+  </div>
+
+  <div class="steppers">
+    <div class="stepper" style="--c: var(--work)">
+      <div class="lab"><span>Trabajo</span>
+        <div class="val"><input id="work" type="number" inputmode="numeric" min="1" max="3600" aria-label="Segundos de trabajo"><span class="unit">seg</span></div>
+      </div>
+      <div class="btns"><button class="round" data-k="work" data-d="-5" aria-label="Menos 5 segundos">−</button><button class="round" data-k="work" data-d="5" aria-label="Más 5 segundos">+</button></div>
+    </div>
+    <div class="stepper" style="--c: var(--rest)">
+      <div class="lab"><span>Descanso</span>
+        <div class="val"><input id="rest" type="number" inputmode="numeric" min="0" max="3600" aria-label="Segundos de descanso"><span class="unit">seg</span></div>
+      </div>
+      <div class="btns"><button class="round" data-k="rest" data-d="-5" aria-label="Menos 5 segundos">−</button><button class="round" data-k="rest" data-d="5" aria-label="Más 5 segundos">+</button></div>
+    </div>
+    <div class="stepper" style="--c: var(--fg)">
+      <div class="lab"><span>Series</span>
+        <div class="val"><input id="rounds" type="number" inputmode="numeric" min="1" max="99" aria-label="Cantidad de series"><span class="unit">series</span></div>
+      </div>
+      <div class="btns"><button class="round" data-k="rounds" data-d="-1" aria-label="Una serie menos">−</button><button class="round" data-k="rounds" data-d="1" aria-label="Una serie más">+</button></div>
+    </div>
+  </div>
+
+  <button class="start" id="startBtn">Empezar</button>
+  <p class="hint">Suena un pitido al terminar el trabajo y otro distinto al terminar el descanso. Subí el volumen.</p>
+</main>
+
+<section class="run prep" id="run" hidden aria-live="polite">
+  <div class="run-top"><span id="roundLbl">Serie 1 de 8</span><span id="leftLbl">0:00</span></div>
+  <div class="run-mid">
+    <div class="phase" id="phaseLbl">Preparate</div>
+    <div class="clock" id="clock">3</div>
+    <div class="next" id="nextLbl"></div>
+  </div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="ctrls">
+    <button class="ctrl" id="stopBtn">Terminar</button>
+    <button class="ctrl main" id="pauseBtn">Pausa</button>
+    <button class="ctrl" id="skipBtn">Saltar</button>
+  </div>
+</section>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const LIMITS = { work: [1, 3600], rest: [0, 3600], rounds: [1, 99] };
+  const PREP = 3;
+  const cfg = { work: 35, rest: 15, rounds: 8 };
+  try { Object.assign(cfg, JSON.parse(localStorage.getItem("intervalos") || "{}")); } catch (e) {}
+
+  const fmt = (s) => { s = Math.max(0, Math.ceil(s)); const m = Math.floor(s / 60); return m + ":" + String(s % 60).padStart(2, "0"); };
+  const big = (s) => { s = Math.max(0, Math.ceil(s)); return s >= 60 ? fmt(s) : String(s); };
+  const clamp = (k, v) => Math.min(LIMITS[k][1], Math.max(LIMITS[k][0], Math.round(+v || 0)));
+
+  function render() {
+    for (const k of ["work", "rest", "rounds"]) if (document.activeElement !== $(k)) $(k).value = cfg[k];
+    const total = cfg.work * cfg.rounds + cfg.rest * (cfg.rounds - 1);
+    $("total").textContent = fmt(total);
+    document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", +c.dataset.w === cfg.work && +c.dataset.r === cfg.rest));
+    try { localStorage.setItem("intervalos", JSON.stringify(cfg)); } catch (e) {}
+  }
+  function set(k, v) { cfg[k] = clamp(k, v); render(); }
+
+  document.querySelectorAll(".round").forEach((b) => b.addEventListener("click", () => set(b.dataset.k, cfg[b.dataset.k] + +b.dataset.d)));
+  for (const k of ["work", "rest", "rounds"]) {
+    $(k).addEventListener("input", (e) => { if (e.target.value !== "") { cfg[k] = clamp(k, e.target.value); render(); } });
+    $(k).addEventListener("blur", () => set(k, $(k).value));
+    $(k).addEventListener("focus", (e) => e.target.select());
+  }
+  $("presets").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) { cfg.work = +c.dataset.w; cfg.rest = +c.dataset.r; render(); } });
+
+  /* ---------- Sound ---------- */
+  let ac = null;
+  function audio() {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (ac && ac.state === "suspended") ac.resume();
+    return ac;
+  }
+  function tone(freq, start, dur, type = "square", vol = 0.25) {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime + start, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.setValueAtTime(vol, t + dur - 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
+  const vibrate = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+  const SOUND = {
+    tick: () => tone(660, 0, 0.09, "sine", 0.35),
+    // End of work -> rest: two falling tones, "aflojá"
+    endWork: () => { tone(988, 0, 0.18); tone(740, 0.22, 0.18); tone(587, 0.44, 0.35); vibrate([200, 80, 200]); },
+    // End of rest -> work: rising, long, "¡dale!"
+    endRest: () => { tone(784, 0, 0.12); tone(1175, 0.15, 0.55); vibrate([400]); },
+    done: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.16, i === 3 ? 0.6 : 0.15, "triangle", 0.35)); vibrate([200, 100, 200, 100, 400]); },
+  };
+
+  /* ---------- Timer ---------- */
+  let plan = [], idx = 0, endAt = 0, remainingWhenPaused = 0, paused = false, timer = null, lastWhole = null, wake = null;
+
+  function buildPlan() {
+    plan = [{ type: "prep", dur: PREP, round: 1 }];
+    for (let r = 1; r <= cfg.rounds; r++) {
+      plan.push({ type: "work", dur: cfg.work, round: r });
+      if (r < cfg.rounds && cfg.rest > 0) plan.push({ type: "rest", dur: cfg.rest, round: r });
+    }
+  }
+  const LABEL = { prep: "Preparate", work: "Trabajo", rest: "Descanso", done: "¡Listo!" };
+
+  function enter(i) {
+    idx = i; lastWhole = null;
+    const p = plan[i];
+    endAt = performance.now() + p.dur * 1000;
+    const run = $("run");
+    run.classList.remove("prep", "work", "rest", "done");
+    run.classList.add(p.type);
+    $("phaseLbl").textContent = LABEL[p.type];
+    $("roundLbl").textContent = "Serie " + p.round + " de " + cfg.rounds;
+    const nx = plan[i + 1];
+    $("nextLbl").textContent = nx ? "Sigue: " + LABEL[nx.type].toLowerCase() + " " + fmt(nx.dur) : "Última";
+    tick();
+  }
+
+  function remaining() { return paused ? remainingWhenPaused : (endAt - performance.now()) / 1000; }
+  function timeLeftTotal() {
+    let t = Math.max(0, remaining());
+    for (let j = idx + 1; j < plan.length; j++) t += plan[j].dur;
+    return t;
+  }
+
+  function tick() {
+    if (idx >= plan.length) return;
+    const p = plan[idx], rem = remaining();
+    if (rem <= 0 && !paused) { finishPhase(); return; }
+    const whole = Math.ceil(rem);
+    $("clock").textContent = big(rem);
+    $("leftLbl").textContent = fmt(timeLeftTotal());
+    $("bar").style.width = (100 * (1 - rem / p.dur)) + "%";
+    if (!paused && whole !== lastWhole) {
+      if (lastWhole !== null && whole <= 3 && whole >= 1) SOUND.tick();
+      lastWhole = whole;
+    }
+  }
+
+  function finishPhase() {
+    const p = plan[idx];
+    const nextIdx = idx + 1;
+    if (nextIdx >= plan.length) { SOUND.done(); finish(); return; }
+    if (p.type === "work") SOUND.endWork();
+    else SOUND.endRest(); // rest or prep ending -> go
+    enter(nextIdx);
+  }
+
+  function finish() {
+    clearInterval(timer); timer = null;
+    idx = plan.length;
+    const run = $("run");
+    run.classList.remove("prep", "work", "rest"); run.classList.add("done");
+    $("phaseLbl").textContent = LABEL.done;
+    $("clock").textContent = cfg.rounds;
+    $("nextLbl").textContent = "series completadas · " + fmt(cfg.work * cfg.rounds + cfg.rest * (cfg.rounds - 1));
+    $("roundLbl").textContent = "Terminado";
+    $("leftLbl").textContent = "0:00";
+    $("bar").style.width = "100%";
+    $("pauseBtn").textContent = "Otra vez";
+    $("skipBtn").hidden = true;
+    releaseWake();
+  }
+
+  async function requestWake() { try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {} }
+  function releaseWake() { try { wake && wake.release(); } catch (e) {} wake = null; }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && timer) requestWake(); });
+
+  function start() {
+    audio();
+    buildPlan(); paused = false;
+    $("run").classList.remove("paused");
+    $("pauseBtn").textContent = "Pausa"; $("skipBtn").hidden = false;
+    $("setup").hidden = true; $("run").hidden = false;
+    enter(0);
+    clearInterval(timer); timer = setInterval(tick, 100);
+    requestWake();
+  }
+  function stop() {
+    clearInterval(timer); timer = null; paused = false;
+    $("run").hidden = true; $("setup").hidden = false;
+    releaseWake();
+  }
+  function togglePause() {
+    if (idx >= plan.length) { start(); return; }
+    audio();
+    if (paused) { endAt = performance.now() + remainingWhenPaused * 1000; paused = false; }
+    else { remainingWhenPaused = remaining(); paused = true; }
+    $("pauseBtn").textContent = paused ? "Seguir" : "Pausa";
+    $("run").classList.toggle("paused", paused);
+    tick();
+  }
+  function skip() {
+    if (idx >= plan.length) return;
+    paused = false; $("run").classList.remove("paused"); $("pauseBtn").textContent = "Pausa";
+    finishPhase();
+  }
+
+  $("startBtn").addEventListener("click", start);
+  $("stopBtn").addEventListener("click", stop);
+  $("pauseBtn").addEventListener("click", togglePause);
+  $("skipBtn").addEventListener("click", skip);
+  document.addEventListener("keydown", (e) => {
+    if ($("run").hidden) return;
+    if (e.code === "Space") { e.preventDefault(); togglePause(); }
+    if (e.key === "Escape") stop();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
