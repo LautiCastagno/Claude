@@ -3,65 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ff5a1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Intervalos">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Intervalos</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Barlow:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: one screen, one column. Setup = three big steppers + start; Run = full-bleed phase color with a giant scoreboard countdown. */
+/* Layout: one screen, one column. Two tabs (Timer / Mis rutinas) over the setup; Run = full-bleed phase color with a giant scoreboard countdown. */
 :root {
   --bg: #eef1f4;
   --surface: #ffffff;
   --fg: #14191f;
   --muted: #5c6773;
   --line: #d5dbe2;
+  --danger: #c62828;
   --work: #ff5a1f;
   --work-ink: #1a0b03;
   --rest: #1f8a8a;
   --rest-ink: #ffffff;
-  --prep: #2b3440;
   --long: #4b4fc9;
   --long-ink: #ffffff;
+  --prep: #2b3440;
   --prep-ink: #ffffff;
   --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640;
+    --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640; --danger: #ff6b6b;
     --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34; --long: #5a5fe0;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640;
+  --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640; --danger: #ff6b6b;
   --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34; --long: #5a5fe0;
   color-scheme: dark;
 }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
+  margin: 0;
   background: var(--bg); color: var(--fg);
   font-family: var(--body); font-size: 16px;
   -webkit-tap-highlight-color: transparent;
 }
 button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, .switch input:focus-visible + .track { outline: 3px solid var(--work); outline-offset: 2px; }
+svg { display: block; }
 
-/* ---------- Setup ---------- */
+/* ---------- Setup shell ---------- */
 .setup {
   min-height: 100%; box-sizing: border-box;
   max-width: 460px; margin: 0 auto;
-  padding-block: 24px 28px;
+  padding-block: 20px 28px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  display: flex; flex-direction: column; gap: 18px;
+  display: flex; flex-direction: column; gap: 16px;
 }
-.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.brand h1 { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
-.brand .total { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
-.brand .total b { color: var(--fg); font-weight: 700; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.top h1 { font-family: var(--display); font-weight: 900; font-size: 34px; letter-spacing: .02em; margin: 0; text-transform: uppercase; line-height: 1; }
+.tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.tab { border: 0; background: transparent; border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.view { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+
+.summary-line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.summary-line b { color: var(--fg); font-weight: 700; }
 
 .presets { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -79,9 +95,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
   position: relative; overflow: hidden;
 }
 .stepper::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--c, var(--muted)); }
-.stepper .lab { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.stepper .lab span:first-child { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.stepper .val { display: flex; align-items: baseline; gap: 4px; }
+.lab { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lab > span:first-child, .label { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.val { display: flex; align-items: baseline; gap: 4px; }
 .stepper input {
   width: 3.2ch; border: 0; background: transparent; color: var(--fg); padding: 0;
   font-family: var(--display); font-weight: 900; font-size: 52px; line-height: 1;
@@ -89,8 +105,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
   -moz-appearance: textfield; appearance: textfield;
 }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.stepper .unit { color: var(--muted); font-weight: 600; font-size: 15px; }
-.stepper .btns { display: flex; gap: 8px; }
+.unit { color: var(--muted); font-weight: 600; font-size: 15px; }
+.btns { display: flex; gap: 8px; }
 .round {
   width: 56px; height: 56px; border-radius: 50%;
   border: 1px solid var(--line); background: var(--bg);
@@ -99,6 +115,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
 }
 .round:active { transform: scale(.94); }
 
+/* Alerts card */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; border-radius: 9px; padding: 9px 4px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+.seg button svg { width: 18px; height: 18px; flex: none; }
+.seg button[aria-checked="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+.switch { display: flex; align-items: center; gap: 12px; font-weight: 600; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.track { width: 46px; height: 28px; border-radius: 14px; background: var(--line); position: relative; flex: none; transition: background .2s; }
+.track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / .3); transition: transform .2s; }
+.switch input:checked + .track { background: var(--work); }
+.switch input:checked + .track::after { transform: translateX(18px); }
+.switch small { display: block; color: var(--muted); font-weight: 500; font-size: 13px; }
+.switch.off { opacity: .45; }
+
 .start {
   margin-top: auto;
   border: 0; border-radius: 18px; background: var(--work); color: var(--work-ink);
@@ -106,14 +137,46 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
   padding: 18px; touch-action: manipulation;
 }
 .start:active { transform: scale(.98); }
-.hint { margin: 0; text-align: center; color: var(--muted); font-size: 13px; }
+.hint { margin: 0; text-align: center; color: var(--muted); font-size: 13px; text-wrap: balance; }
+
+/* ---------- Routines ---------- */
+.save-row { display: flex; gap: 8px; }
+.text {
+  flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+  border-radius: 12px; padding: 12px 14px; font: inherit; font-size: 16px;
+}
+.btn-solid { border: 0; border-radius: 12px; background: var(--fg); color: var(--bg); font-weight: 700; padding: 0 18px; }
+.current { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.current b { color: var(--fg); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.item {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 6px; padding: 6px 8px 6px 4px;
+}
+.item.active { border-color: var(--fg); }
+.load { border: 0; background: transparent; text-align: left; padding: 8px 10px; min-width: 0; display: flex; flex-direction: column; gap: 2px; border-radius: 12px; }
+.load strong { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+.load span { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; background: var(--fg); color: var(--bg); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
+.play { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--work); color: var(--work-ink); display: grid; place-items: center; }
+.play svg { width: 22px; height: 22px; }
+.del { height: 48px; min-width: 44px; border: 0; background: transparent; color: var(--muted); border-radius: 12px; font-size: 22px; padding: 0 8px; }
+.del.confirm { color: var(--danger); font-size: 14px; font-weight: 700; }
+.empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1px dashed var(--line); border-radius: 16px; display: flex; flex-direction: column; gap: 6px; }
+.empty strong { color: var(--fg); font-size: 17px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%);
+  background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 600; z-index: 20;
+  max-width: calc(100% - 32px); box-sizing: border-box;
+}
 
 /* ---------- Run ---------- */
 .run {
   position: fixed; inset: 0; z-index: 5;
   background: var(--phase-bg); color: var(--phase-ink);
   display: flex; flex-direction: column;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -123,9 +186,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
 .run.rest { --phase-bg: var(--rest); --phase-ink: var(--rest-ink); }
 .run.long { --phase-bg: var(--long); --phase-ink: var(--long-ink); }
 .run.prep, .run.done { --phase-bg: var(--prep); --phase-ink: var(--prep-ink); }
-.run-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.run-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+.run-top > :last-child { text-align: right; }
+.icon-btn { width: 46px; height: 46px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--phase-ink) 45%, transparent); background: transparent; color: var(--phase-ink); display: grid; place-items: center; }
+.icon-btn svg { width: 22px; height: 22px; }
 .run-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
-.phase { font-family: var(--display); font-weight: 900; font-size: clamp(36px, 10vw, 64px); letter-spacing: .08em; text-transform: uppercase; line-height: 1; }
+.phase { font-family: var(--display); font-weight: 900; font-size: clamp(36px, 10vw, 64px); letter-spacing: .08em; text-transform: uppercase; line-height: 1; text-align: center; }
 .clock {
   font-family: var(--display); font-weight: 900; line-height: .85;
   font-size: min(58vw, 46vh); font-variant-numeric: tabular-nums; letter-spacing: -.01em;
@@ -148,59 +214,105 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sound" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+  <symbol id="i-vibrate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="4" width="8" height="16" rx="2"/><path d="M4 9v6M20 9v6"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 5 6M21 9l-5 6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+</svg>
+
 <main class="setup" id="setup">
-  <div class="brand">
+  <div class="top">
     <h1>Intervalos</h1>
-    <div class="total">Total <b id="total">0:00</b></div>
-  </div>
-
-  <div class="presets" id="presets" aria-label="Rápidos">
-    <button class="chip" data-w="35" data-r="15">35 / 15</button>
-    <button class="chip" data-w="40" data-r="20">40 / 20</button>
-    <button class="chip" data-w="45" data-r="15">45 / 15</button>
-    <button class="chip" data-w="20" data-r="10">20 / 10</button>
-    <button class="chip" data-w="60" data-r="30">60 / 30</button>
-  </div>
-
-  <div class="steppers">
-    <div class="stepper" style="--c: var(--work)">
-      <div class="lab"><span>Trabajo</span>
-        <div class="val"><input id="work" type="number" inputmode="numeric" min="1" max="3600" aria-label="Segundos de trabajo"><span class="unit">seg</span></div>
-      </div>
-      <div class="btns"><button class="round" data-k="work" data-d="-5" aria-label="Menos 5 segundos">−</button><button class="round" data-k="work" data-d="5" aria-label="Más 5 segundos">+</button></div>
-    </div>
-    <div class="stepper" style="--c: var(--rest)">
-      <div class="lab"><span>Descanso</span>
-        <div class="val"><input id="rest" type="number" inputmode="numeric" min="0" max="3600" aria-label="Segundos de descanso"><span class="unit">seg</span></div>
-      </div>
-      <div class="btns"><button class="round" data-k="rest" data-d="-5" aria-label="Menos 5 segundos">−</button><button class="round" data-k="rest" data-d="5" aria-label="Más 5 segundos">+</button></div>
-    </div>
-    <div class="stepper" style="--c: var(--fg)">
-      <div class="lab"><span>Series</span>
-        <div class="val"><input id="rounds" type="number" inputmode="numeric" min="1" max="99" aria-label="Cantidad de series"><span class="unit">series</span></div>
-      </div>
-      <div class="btns"><button class="round" data-k="rounds" data-d="-1" aria-label="Una serie menos">−</button><button class="round" data-k="rounds" data-d="1" aria-label="Una serie más">+</button></div>
-    </div>
-    <div class="stepper" style="--c: var(--long)">
-      <div class="lab"><span>Bloques</span>
-        <div class="val"><input id="blocks" type="number" inputmode="numeric" min="1" max="20" aria-label="Cantidad de bloques"><span class="unit" id="blocksUnit">bloque</span></div>
-      </div>
-      <div class="btns"><button class="round" data-k="blocks" data-d="-1" aria-label="Un bloque menos">−</button><button class="round" data-k="blocks" data-d="1" aria-label="Un bloque más">+</button></div>
-    </div>
-    <div class="stepper" id="longRow" style="--c: var(--long)">
-      <div class="lab"><span>Pausa larga</span>
-        <div class="val"><input id="longRest" type="number" inputmode="numeric" min="0" max="3600" aria-label="Segundos de pausa larga entre bloques"><span class="unit">seg</span></div>
-      </div>
-      <div class="btns"><button class="round" data-k="longRest" data-d="-15" aria-label="Menos 15 segundos">−</button><button class="round" data-k="longRest" data-d="15" aria-label="Más 15 segundos">+</button></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabTimer" aria-selected="true" aria-controls="viewTimer">Timer</button>
+      <button class="tab" role="tab" id="tabRoutines" aria-selected="false" aria-controls="viewRoutines">Mis rutinas</button>
     </div>
   </div>
 
-  <button class="start" id="startBtn">Empezar</button>
-  <p class="hint">Suena un pitido al terminar el trabajo y otro distinto al terminar cada descanso o pausa larga. Subí el volumen.</p>
+  <!-- ===== Timer ===== -->
+  <section class="view" id="viewTimer" role="tabpanel" aria-labelledby="tabTimer">
+    <div class="summary-line"><span id="loadedName">Configuración libre</span><span>Total <b id="total">0:00</b></span></div>
+
+    <div class="presets" id="presets" aria-label="Rápidos">
+      <button class="chip" data-w="35" data-r="15">35 / 15</button>
+      <button class="chip" data-w="40" data-r="20">40 / 20</button>
+      <button class="chip" data-w="45" data-r="15">45 / 15</button>
+      <button class="chip" data-w="20" data-r="10">20 / 10</button>
+      <button class="chip" data-w="60" data-r="30">60 / 30</button>
+    </div>
+
+    <div class="steppers">
+      <div class="stepper" style="--c: var(--work)">
+        <div class="lab"><span>Trabajo</span>
+          <div class="val"><input id="work" type="number" inputmode="numeric" min="1" max="3600" aria-label="Segundos de trabajo"><span class="unit">seg</span></div>
+        </div>
+        <div class="btns"><button class="round" data-k="work" data-d="-5" aria-label="Menos 5 segundos">−</button><button class="round" data-k="work" data-d="5" aria-label="Más 5 segundos">+</button></div>
+      </div>
+      <div class="stepper" style="--c: var(--rest)">
+        <div class="lab"><span>Descanso</span>
+          <div class="val"><input id="rest" type="number" inputmode="numeric" min="0" max="3600" aria-label="Segundos de descanso"><span class="unit">seg</span></div>
+        </div>
+        <div class="btns"><button class="round" data-k="rest" data-d="-5" aria-label="Menos 5 segundos">−</button><button class="round" data-k="rest" data-d="5" aria-label="Más 5 segundos">+</button></div>
+      </div>
+      <div class="stepper" style="--c: var(--fg)">
+        <div class="lab"><span>Series</span>
+          <div class="val"><input id="rounds" type="number" inputmode="numeric" min="1" max="99" aria-label="Cantidad de series"><span class="unit">series</span></div>
+        </div>
+        <div class="btns"><button class="round" data-k="rounds" data-d="-1" aria-label="Una serie menos">−</button><button class="round" data-k="rounds" data-d="1" aria-label="Una serie más">+</button></div>
+      </div>
+      <div class="stepper" style="--c: var(--long)">
+        <div class="lab"><span>Bloques</span>
+          <div class="val"><input id="blocks" type="number" inputmode="numeric" min="1" max="20" aria-label="Cantidad de bloques"><span class="unit" id="blocksUnit">bloque</span></div>
+        </div>
+        <div class="btns"><button class="round" data-k="blocks" data-d="-1" aria-label="Un bloque menos">−</button><button class="round" data-k="blocks" data-d="1" aria-label="Un bloque más">+</button></div>
+      </div>
+      <div class="stepper" id="longRow" style="--c: var(--long)">
+        <div class="lab"><span>Pausa larga</span>
+          <div class="val"><input id="longRest" type="number" inputmode="numeric" min="0" max="3600" aria-label="Segundos de pausa larga entre bloques"><span class="unit">seg</span></div>
+        </div>
+        <div class="btns"><button class="round" data-k="longRest" data-d="-15" aria-label="Menos 15 segundos">−</button><button class="round" data-k="longRest" data-d="15" aria-label="Más 15 segundos">+</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="label">Avisos</span>
+      <div class="seg" role="radiogroup" aria-label="Tipo de aviso" id="alertSeg">
+        <button role="radio" data-alert="sound"><svg><use href="#i-sound"/></svg>Sonido</button>
+        <button role="radio" data-alert="vibrate"><svg><use href="#i-vibrate"/></svg>Vibrar</button>
+        <button role="radio" data-alert="mute"><svg><use href="#i-mute"/></svg>Silencio</button>
+      </div>
+      <label class="switch" id="voiceRow"><input type="checkbox" id="voice"><span class="track"></span><span>Voz<small>Dice “descanso”, “¡dale!”, “último bloque”…</small></span></label>
+    </div>
+
+    <button class="start" id="startBtn">Empezar</button>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <!-- ===== Mis rutinas ===== -->
+  <section class="view" id="viewRoutines" role="tabpanel" aria-labelledby="tabRoutines" hidden>
+    <form class="card" id="saveForm">
+      <span class="label">Guardar la configuración actual</span>
+      <div class="current" id="currentSummary"></div>
+      <div class="save-row">
+        <input class="text" id="rName" type="text" maxlength="40" placeholder="Nombre, ej. Piernas" autocomplete="off" aria-label="Nombre de la rutina">
+        <button class="btn-solid" type="submit">Guardar</button>
+      </div>
+    </form>
+    <ul class="list" id="rList"></ul>
+    <div class="empty" id="rEmpty">
+      <strong>Todavía no guardaste rutinas</strong>
+      <span>Armá los tiempos en Timer, volvé acá, ponele un nombre y tocá Guardar. Después la arrancás con un toque.</span>
+    </div>
+  </section>
 </main>
 
 <section class="run prep" id="run" hidden aria-live="polite">
-  <div class="run-top"><span id="roundLbl">Serie 1 de 8</span><span id="leftLbl">0:00</span></div>
+  <div class="run-top">
+    <span id="roundLbl">Serie 1 de 8</span>
+    <button class="icon-btn" id="alertBtn" aria-label="Cambiar aviso"><svg><use href="#i-sound"/></svg></button>
+    <span id="leftLbl">0:00</span>
+  </div>
   <div class="run-mid">
     <div class="phase" id="phaseLbl">Preparate</div>
     <div class="clock" id="clock">3</div>
@@ -214,28 +326,47 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
   </div>
 </section>
 
+<div class="toast" id="toast" role="status" hidden></div>
+
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
+  const load = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch (e) { return fallback; } };
+  const save = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} };
+
   const LIMITS = { work: [1, 3600], rest: [0, 3600], rounds: [1, 99], blocks: [1, 20], longRest: [0, 3600] };
   const KEYS = Object.keys(LIMITS);
   const PREP = 3;
   const cfg = { work: 35, rest: 15, rounds: 8, blocks: 1, longRest: 60 };
-  try { Object.assign(cfg, JSON.parse(localStorage.getItem("intervalos") || "{}")); } catch (e) {}
+  Object.assign(cfg, load("intervalos", {}));
+  const prefs = Object.assign({ alert: "sound", voice: true }, load("intervalos-prefs", {}));
+  let routines = load("intervalos-rutinas", []);
+  if (!Array.isArray(routines)) routines = [];
 
   const fmt = (s) => { s = Math.max(0, Math.ceil(s)); const m = Math.floor(s / 60); return m + ":" + String(s % 60).padStart(2, "0"); };
   const big = (s) => { s = Math.max(0, Math.ceil(s)); return s >= 60 ? fmt(s) : String(s); };
-  const blockTime = () => cfg.work * cfg.rounds + cfg.rest * (cfg.rounds - 1);
-  const totalTime = () => blockTime() * cfg.blocks + cfg.longRest * (cfg.blocks - 1);
   const clamp = (k, v) => Math.min(LIMITS[k][1], Math.max(LIMITS[k][0], Math.round(+v || 0)));
+  const totalOf = (c) => (c.work * c.rounds + c.rest * (c.rounds - 1)) * c.blocks + c.longRest * (c.blocks - 1);
+  const describe = (c) => c.work + "/" + c.rest + " × " + c.rounds + (c.blocks > 1 ? " · " + c.blocks + " bloques, pausa " + fmt(c.longRest) : "");
+  const pick = (c) => Object.fromEntries(KEYS.map((k) => [k, c[k]]));
+  const sameCfg = (a) => KEYS.every((k) => a[k] === cfg[k]);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 
+  let toastTimer;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 1800); }
+
+  /* ---------- Setup render ---------- */
   function render() {
     for (const k of KEYS) if (document.activeElement !== $(k)) $(k).value = cfg[k];
-    $("total").textContent = fmt(totalTime());
+    $("total").textContent = fmt(totalOf(cfg));
     $("longRow").hidden = cfg.blocks < 2;
     $("blocksUnit").textContent = cfg.blocks === 1 ? "bloque" : "bloques";
     document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", +c.dataset.w === cfg.work && +c.dataset.r === cfg.rest));
-    try { localStorage.setItem("intervalos", JSON.stringify(cfg)); } catch (e) {}
+    const match = routines.find(sameCfg);
+    $("loadedName").innerHTML = match ? "Rutina: <b>" + esc(match.name) + "</b>" : "Configuración libre";
+    $("currentSummary").innerHTML = "<b>" + esc(describe(cfg)) + "</b> · total " + fmt(totalOf(cfg));
+    save("intervalos", pick(cfg));
+    renderRoutines();
   }
   function set(k, v) { cfg[k] = clamp(k, v); render(); }
 
@@ -249,35 +380,152 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
   }
   $("presets").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (c) { cfg.work = +c.dataset.w; cfg.rest = +c.dataset.r; render(); } });
 
-  /* ---------- Sound ---------- */
-  let ac = null;
+  /* ---------- Tabs ---------- */
+  function showTab(name) {
+    const r = name === "routines";
+    $("tabTimer").setAttribute("aria-selected", !r); $("tabRoutines").setAttribute("aria-selected", r);
+    $("viewTimer").hidden = r; $("viewRoutines").hidden = !r;
+  }
+  $("tabTimer").addEventListener("click", () => showTab("timer"));
+  $("tabRoutines").addEventListener("click", () => showTab("routines"));
+
+  /* ---------- Routines ---------- */
+  let pendingDelete = null, pendingTimer;
+  function renderRoutines() {
+    const list = $("rList");
+    $("rEmpty").hidden = routines.length > 0;
+    list.innerHTML = routines.map((r) =>
+      '<li class="item' + (sameCfg(r) ? " active" : "") + '" data-id="' + esc(r.id) + '">' +
+        '<button class="load" data-act="load"><strong>' + esc(r.name) + (sameCfg(r) ? '<span class="badge">En uso</span>' : "") + "</strong>" +
+        "<span>" + esc(describe(r)) + " · " + fmt(totalOf(r)) + "</span></button>" +
+        '<button class="play" data-act="play" aria-label="Empezar ' + esc(r.name) + '"><svg><use href="#i-play"/></svg></button>' +
+        '<button class="del' + (pendingDelete === r.id ? " confirm" : "") + '" data-act="del" aria-label="Borrar ' + esc(r.name) + '">' + (pendingDelete === r.id ? "¿Borrar?" : "×") + "</button>" +
+      "</li>").join("");
+  }
+  $("rList").addEventListener("click", (e) => {
+    const btn = e.target.closest("button"); if (!btn) return;
+    const id = btn.closest(".item").dataset.id, r = routines.find((x) => x.id === id); if (!r) return;
+    const act = btn.dataset.act;
+    if (act === "del") {
+      if (pendingDelete === id) {
+        routines = routines.filter((x) => x.id !== id); pendingDelete = null; save("intervalos-rutinas", routines); render(); toast("Borrada: " + r.name); return;
+      }
+      pendingDelete = id; clearTimeout(pendingTimer); pendingTimer = setTimeout(() => { pendingDelete = null; renderRoutines(); }, 3000);
+      renderRoutines(); return;
+    }
+    pendingDelete = null;
+    Object.assign(cfg, pick(r)); render();
+    if (act === "play") start();
+    else { showTab("timer"); toast("Cargada: " + r.name); }
+  });
+  $("saveForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("rName").value.trim() || "Rutina " + (routines.length + 1);
+    const existing = routines.find((x) => x.name.toLowerCase() === name.toLowerCase());
+    if (existing) Object.assign(existing, pick(cfg));
+    else routines.unshift(Object.assign({ id: Date.now().toString(36), name }, pick(cfg)));
+    save("intervalos-rutinas", routines);
+    $("rName").value = ""; $("rName").blur();
+    render(); toast((existing ? "Actualizada: " : "Guardada: ") + name);
+  });
+
+  /* ---------- Alert mode (sound / vibrate / mute) + voice ---------- */
+  const ALERTS = ["sound", "vibrate", "mute"];
+  const ALERT_NAME = { sound: "Sonido", vibrate: "Solo vibración", mute: "Silencio" };
+  function renderPrefs() {
+    document.querySelectorAll("#alertSeg button").forEach((b) => b.setAttribute("aria-checked", b.dataset.alert === prefs.alert));
+    $("voice").checked = prefs.voice;
+    $("voiceRow").classList.toggle("off", prefs.alert !== "sound");
+    $("alertBtn").innerHTML = '<svg><use href="#i-' + prefs.alert + '"/></svg>';
+    $("alertBtn").setAttribute("aria-label", "Aviso: " + ALERT_NAME[prefs.alert] + ". Tocá para cambiar");
+    $("hint").textContent = prefs.alert === "sound"
+      ? "Suena al terminar cada tramo, con un tic en los últimos 3 segundos. Subí el volumen."
+      : prefs.alert === "vibrate"
+        ? "Vibra en cada cambio y en los últimos 3 segundos. La vibración funciona en Android; el iPhone no la permite desde el navegador."
+        : "Sin sonido ni vibración: mirá la pantalla.";
+    save("intervalos-prefs", prefs);
+  }
+  function setAlert(a) {
+    prefs.alert = a; renderPrefs();
+    if (a !== "sound") { try { speechSynthesis.cancel(); } catch (e) {} }
+    if (timer) scheduleSounds();
+  }
+  $("alertSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { audio(); setAlert(b.dataset.alert); } });
+  $("alertBtn").addEventListener("click", () => { audio(); setAlert(ALERTS[(ALERTS.indexOf(prefs.alert) + 1) % 3]); toast(ALERT_NAME[prefs.alert]); });
+  $("voice").addEventListener("change", (e) => { prefs.voice = e.target.checked; renderPrefs(); if (prefs.voice) say("Voz activada"); });
+
+  /* ---------- Sound: scheduled ahead on the audio clock so it keeps time even if the page is throttled ---------- */
+  let ac = null, scheduled = [];
   function audio() {
     if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
-    if (ac && ac.state === "suspended") ac.resume();
+    if (ac && ac.state !== "running") { try { ac.resume(); } catch (e) {} }
     return ac;
   }
-  function tone(freq, start, dur, type = "square", vol = 0.25) {
-    const a = audio(); if (!a) return;
-    const t = a.currentTime + start, o = a.createOscillator(), g = a.createGain();
-    o.type = type; o.frequency.setValueAtTime(freq, t);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
-    g.gain.setValueAtTime(vol, t + dur - 0.03);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+  function tone(freq, at, dur, type = "square", vol = 0.25) {
+    if (!ac) return;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, at);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + 0.01);
+    g.gain.setValueAtTime(vol, at + dur - 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g).connect(ac.destination); o.start(at); o.stop(at + dur + 0.02);
+    const item = { o, at };
+    scheduled.push(item);
+    o.onended = () => { scheduled = scheduled.filter((x) => x !== item); };
   }
-  const vibrate = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
-  const SOUND = {
-    tick: () => tone(660, 0, 0.09, "sine", 0.35),
-    // End of work -> rest: two falling tones, "aflojá"
-    endWork: () => { tone(988, 0, 0.18); tone(740, 0.22, 0.18); tone(587, 0.44, 0.35); vibrate([200, 80, 200]); },
-    // End of rest -> work: rising, long, "¡dale!"
-    endRest: () => { tone(784, 0, 0.12); tone(1175, 0.15, 0.55); vibrate([400]); },
-    done: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.16, i === 3 ? 0.6 : 0.15, "triangle", 0.35)); vibrate([200, 100, 200, 100, 400]); },
+  function cancelSounds(all) {
+    if (!ac) return;
+    const now = ac.currentTime;
+    scheduled = scheduled.filter((x) => {
+      if (all || x.at > now + 0.005) { try { x.o.stop(); } catch (e) {} return false; }
+      return true;
+    });
+  }
+  const SND = {
+    tick: (t) => tone(660, t, 0.09, "sine", 0.35),
+    endWork: (t) => { tone(988, t, 0.18); tone(740, t + 0.22, 0.18); tone(587, t + 0.44, 0.35); },   // falling: aflojá
+    endRest: (t) => { tone(784, t, 0.12); tone(1175, t + 0.15, 0.55); },                            // rising: ¡dale!
+    done: (t) => [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.16, i === 3 ? 0.6 : 0.15, "triangle", 0.35)),
   };
+  const endSoundFor = (j) => (j === plan.length - 1 ? SND.done : plan[j].type === "work" ? SND.endWork : SND.endRest);
+
+  function scheduleSounds() {
+    cancelSounds(false);
+    if (!ac || prefs.alert !== "sound" || paused || idx >= plan.length) return;
+    const now = ac.currentTime, horizon = now + 20 * 60;
+    let end = now + (endAt - performance.now()) / 1000;
+    for (let j = idx; j < plan.length; j++) {
+      if (j > idx) end += plan[j].dur;
+      if (end - plan[j].dur > horizon) break;
+      for (const k of [3, 2, 1]) if (plan[j].dur > k && end - k > now + 0.02) SND.tick(end - k);
+      if (end > now + 0.02) endSoundFor(j)(end);
+    }
+  }
+  function playNow(fn) { if (ac && prefs.alert === "sound") fn(ac.currentTime + 0.02); }
+
+  const vibrate = (p) => { if (prefs.alert === "mute") return; try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+  let sayTimer;
+  function say(text, delay = 0) {
+    if (prefs.alert !== "sound" || !prefs.voice || !("speechSynthesis" in window)) return;
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(() => {
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        const vs = speechSynthesis.getVoices();
+        const v = vs.find((x) => /^es[-_]AR/i.test(x.lang)) || vs.find((x) => /^es[-_](419|MX|US|CO|CL)/i.test(x.lang)) || vs.find((x) => /^es/i.test(x.lang));
+        if (v) u.voice = v;
+        u.lang = v ? v.lang : "es-AR"; u.rate = 1.05; u.volume = 1;
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+      } catch (e) {}
+    }, delay);
+  }
+  try { speechSynthesis.getVoices(); } catch (e) {}
 
   /* ---------- Timer ---------- */
-  let plan = [], idx = 0, endAt = 0, remainingWhenPaused = 0, paused = false, timer = null, lastWhole = null, wake = null;
+  let plan = [], idx = 0, endAt = 0, pausedRem = 0, paused = false, timer = null, lastWhole = null, wake = null;
+  const LABEL = { prep: "Preparate", work: "Trabajo", rest: "Descanso", long: "Pausa larga", done: "¡Listo!" };
 
   function buildPlan() {
     plan = [{ type: "prep", dur: PREP, round: 1, block: 1 }];
@@ -289,50 +537,71 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
       if (b < cfg.blocks && cfg.longRest > 0) plan.push({ type: "long", dur: cfg.longRest, round: cfg.rounds, block: b });
     }
   }
-  const LABEL = { prep: "Preparate", work: "Trabajo", rest: "Descanso", long: "Pausa larga", done: "¡Listo!" };
 
-  function enter(i) {
+  function phrase(p) {
+    if (p.type === "rest") return "Descanso";
+    if (p.type === "long") return "Pausa larga";
+    const lastBlock = p.block === cfg.blocks, lastRound = p.round === cfg.rounds;
+    if (lastBlock && lastRound && cfg.rounds * cfg.blocks > 1) return "Última serie";
+    if (p.round === 1 && p.block > 1) return lastBlock ? "Último bloque" : "Bloque " + p.block;
+    return "¡Dale!";
+  }
+  function feedback(p) {
+    vibrate(p.type === "work" ? [400] : [200, 80, 200]);
+    say(phrase(p), 750);
+  }
+
+  function enter(i, startAt) {
     idx = i; lastWhole = null;
     const p = plan[i];
-    endAt = performance.now() + p.dur * 1000;
+    endAt = startAt + p.dur * 1000;
     const run = $("run");
     run.classList.remove("prep", "work", "rest", "long", "done");
     run.classList.add(p.type);
     $("phaseLbl").textContent = LABEL[p.type];
-    $("roundLbl").textContent = (cfg.blocks > 1 ? "Bloque " + p.block + "/" + cfg.blocks + " · Serie " + p.round + "/" + cfg.rounds : "Serie " + p.round + " de " + cfg.rounds);
+    $("roundLbl").textContent = cfg.blocks > 1 ? "B" + p.block + "/" + cfg.blocks + " · S" + p.round + "/" + cfg.rounds : "Serie " + p.round + " de " + cfg.rounds;
     const nx = plan[i + 1];
     $("nextLbl").textContent = !nx ? "Última" : p.type === "long" ? "Sigue: bloque " + nx.block + " de " + cfg.blocks : "Sigue: " + LABEL[nx.type].toLowerCase() + " " + fmt(nx.dur);
-    tick();
+    scheduleSounds();
+    draw();
   }
 
-  function remaining() { return paused ? remainingWhenPaused : (endAt - performance.now()) / 1000; }
+  const remaining = () => (paused ? pausedRem : (endAt - performance.now()) / 1000);
   function timeLeftTotal() {
     let t = Math.max(0, remaining());
     for (let j = idx + 1; j < plan.length; j++) t += plan[j].dur;
     return t;
   }
 
-  function tick() {
+  function draw() {
     if (idx >= plan.length) return;
-    const p = plan[idx], rem = remaining();
-    if (rem <= 0 && !paused) { finishPhase(); return; }
-    const whole = Math.ceil(rem);
+    const p = plan[idx], rem = Math.max(0, remaining());
     $("clock").textContent = big(rem);
     $("leftLbl").textContent = fmt(timeLeftTotal());
     $("bar").style.width = (100 * (1 - rem / p.dur)) + "%";
+    const whole = Math.ceil(rem);
     if (!paused && whole !== lastWhole) {
-      if (lastWhole !== null && whole <= 3 && whole >= 1) SOUND.tick();
+      if (lastWhole !== null && whole >= 1 && whole <= 3 && prefs.alert === "vibrate") vibrate(80);
       lastWhole = whole;
     }
   }
 
-  function finishPhase() {
-    const p = plan[idx];
-    const nextIdx = idx + 1;
-    if (nextIdx >= plan.length) { SOUND.done(); finish(); return; }
-    if (p.type === "work") SOUND.endWork();
-    else SOUND.endRest(); // rest, long pause or prep ending -> go
-    enter(nextIdx);
+  function tick() {
+    while (!paused && idx < plan.length && remaining() <= 0) advance(false);
+    draw();
+  }
+
+  // manual = Saltar: the scheduled sound for this boundary never played, so play it now
+  function advance(manual) {
+    const from = idx, next = idx + 1;
+    const boundary = manual ? performance.now() : endAt;
+    if (next >= plan.length) {
+      if (manual) { cancelSounds(false); playNow(SND.done); }
+      finish(); return;
+    }
+    enter(next, boundary);
+    if (manual) playNow(plan[from].type === "work" ? SND.endWork : SND.endRest);
+    if (manual || remaining() > 0.5) feedback(plan[next]);
   }
 
   function finish() {
@@ -342,18 +611,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
     run.classList.remove("prep", "work", "rest", "long"); run.classList.add("done");
     $("phaseLbl").textContent = LABEL.done;
     $("clock").textContent = cfg.rounds * cfg.blocks;
-    $("nextLbl").textContent = "series completadas" + (cfg.blocks > 1 ? " en " + cfg.blocks + " bloques" : "") + " · " + fmt(totalTime());
+    $("nextLbl").textContent = "series completadas" + (cfg.blocks > 1 ? " en " + cfg.blocks + " bloques" : "") + " · " + fmt(totalOf(cfg));
     $("roundLbl").textContent = "Terminado";
     $("leftLbl").textContent = "0:00";
     $("bar").style.width = "100%";
     $("pauseBtn").textContent = "Otra vez";
     $("skipBtn").hidden = true;
+    vibrate([200, 100, 200, 100, 400]);
+    say("¡Terminaste! Buen trabajo", 900);
     releaseWake();
   }
 
   async function requestWake() { try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {} }
   function releaseWake() { try { wake && wake.release(); } catch (e) {} wake = null; }
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && timer) requestWake(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && timer) { requestWake(); audio(); tick(); scheduleSounds(); }
+  });
 
   function start() {
     audio();
@@ -361,28 +634,30 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
     $("run").classList.remove("paused");
     $("pauseBtn").textContent = "Pausa"; $("skipBtn").hidden = false;
     $("setup").hidden = true; $("run").hidden = false;
-    enter(0);
     clearInterval(timer); timer = setInterval(tick, 100);
+    enter(0, performance.now());
+    say("Preparate");
     requestWake();
   }
   function stop() {
     clearInterval(timer); timer = null; paused = false;
+    cancelSounds(true); clearTimeout(sayTimer); try { speechSynthesis.cancel(); } catch (e) {}
     $("run").hidden = true; $("setup").hidden = false;
     releaseWake();
   }
   function togglePause() {
     if (idx >= plan.length) { start(); return; }
     audio();
-    if (paused) { endAt = performance.now() + remainingWhenPaused * 1000; paused = false; }
-    else { remainingWhenPaused = remaining(); paused = true; }
+    if (paused) { endAt = performance.now() + pausedRem * 1000; paused = false; scheduleSounds(); }
+    else { pausedRem = remaining(); paused = true; cancelSounds(false); clearTimeout(sayTimer); }
     $("pauseBtn").textContent = paused ? "Seguir" : "Pausa";
     $("run").classList.toggle("paused", paused);
-    tick();
+    draw();
   }
   function skip() {
     if (idx >= plan.length) return;
-    paused = false; $("run").classList.remove("paused"); $("pauseBtn").textContent = "Pausa";
-    finishPhase();
+    if (paused) { paused = false; $("run").classList.remove("paused"); $("pauseBtn").textContent = "Pausa"; }
+    advance(true);
   }
 
   $("startBtn").addEventListener("click", start);
@@ -395,6 +670,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
     if (e.key === "Escape") stop();
   });
 
+  /* ---------- Installable app (only on GitHub Pages) ---------- */
+  if ("serviceWorker" in navigator && /\.github\.io$/.test(location.hostname)) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+
+  renderPrefs();
   render();
 })();
 </script>
