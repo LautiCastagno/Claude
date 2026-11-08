@@ -21,6 +21,8 @@
   --rest: #1f8a8a;
   --rest-ink: #ffffff;
   --prep: #2b3440;
+  --long: #4b4fc9;
+  --long-ink: #ffffff;
   --prep-ink: #ffffff;
   --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -28,13 +30,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640;
-    --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34;
+    --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34; --long: #5a5fe0;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1418; --surface: #1a2128; --fg: #eef2f5; --muted: #95a1ad; --line: #2c3640;
-  --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34;
+  --work: #ff6a2e; --rest: #24a3a3; --prep: #222b34; --long: #5a5fe0;
   color-scheme: dark;
 }
 [hidden] { display: none !important; }
@@ -119,6 +121,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
 }
 .run.work { --phase-bg: var(--work); --phase-ink: var(--work-ink); }
 .run.rest { --phase-bg: var(--rest); --phase-ink: var(--rest-ink); }
+.run.long { --phase-bg: var(--long); --phase-ink: var(--long-ink); }
 .run.prep, .run.done { --phase-bg: var(--prep); --phase-ink: var(--prep-ink); }
 .run-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
 .run-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
@@ -178,10 +181,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
       </div>
       <div class="btns"><button class="round" data-k="rounds" data-d="-1" aria-label="Una serie menos">−</button><button class="round" data-k="rounds" data-d="1" aria-label="Una serie más">+</button></div>
     </div>
+    <div class="stepper" style="--c: var(--long)">
+      <div class="lab"><span>Bloques</span>
+        <div class="val"><input id="blocks" type="number" inputmode="numeric" min="1" max="20" aria-label="Cantidad de bloques"><span class="unit" id="blocksUnit">bloque</span></div>
+      </div>
+      <div class="btns"><button class="round" data-k="blocks" data-d="-1" aria-label="Un bloque menos">−</button><button class="round" data-k="blocks" data-d="1" aria-label="Un bloque más">+</button></div>
+    </div>
+    <div class="stepper" id="longRow" style="--c: var(--long)">
+      <div class="lab"><span>Pausa larga</span>
+        <div class="val"><input id="longRest" type="number" inputmode="numeric" min="0" max="3600" aria-label="Segundos de pausa larga entre bloques"><span class="unit">seg</span></div>
+      </div>
+      <div class="btns"><button class="round" data-k="longRest" data-d="-15" aria-label="Menos 15 segundos">−</button><button class="round" data-k="longRest" data-d="15" aria-label="Más 15 segundos">+</button></div>
+    </div>
   </div>
 
   <button class="start" id="startBtn">Empezar</button>
-  <p class="hint">Suena un pitido al terminar el trabajo y otro distinto al terminar el descanso. Subí el volumen.</p>
+  <p class="hint">Suena un pitido al terminar el trabajo y otro distinto al terminar cada descanso o pausa larga. Subí el volumen.</p>
 </main>
 
 <section class="run prep" id="run" hidden aria-live="polite">
@@ -202,26 +217,30 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const LIMITS = { work: [1, 3600], rest: [0, 3600], rounds: [1, 99] };
+  const LIMITS = { work: [1, 3600], rest: [0, 3600], rounds: [1, 99], blocks: [1, 20], longRest: [0, 3600] };
+  const KEYS = Object.keys(LIMITS);
   const PREP = 3;
-  const cfg = { work: 35, rest: 15, rounds: 8 };
+  const cfg = { work: 35, rest: 15, rounds: 8, blocks: 1, longRest: 60 };
   try { Object.assign(cfg, JSON.parse(localStorage.getItem("intervalos") || "{}")); } catch (e) {}
 
   const fmt = (s) => { s = Math.max(0, Math.ceil(s)); const m = Math.floor(s / 60); return m + ":" + String(s % 60).padStart(2, "0"); };
   const big = (s) => { s = Math.max(0, Math.ceil(s)); return s >= 60 ? fmt(s) : String(s); };
+  const blockTime = () => cfg.work * cfg.rounds + cfg.rest * (cfg.rounds - 1);
+  const totalTime = () => blockTime() * cfg.blocks + cfg.longRest * (cfg.blocks - 1);
   const clamp = (k, v) => Math.min(LIMITS[k][1], Math.max(LIMITS[k][0], Math.round(+v || 0)));
 
   function render() {
-    for (const k of ["work", "rest", "rounds"]) if (document.activeElement !== $(k)) $(k).value = cfg[k];
-    const total = cfg.work * cfg.rounds + cfg.rest * (cfg.rounds - 1);
-    $("total").textContent = fmt(total);
+    for (const k of KEYS) if (document.activeElement !== $(k)) $(k).value = cfg[k];
+    $("total").textContent = fmt(totalTime());
+    $("longRow").hidden = cfg.blocks < 2;
+    $("blocksUnit").textContent = cfg.blocks === 1 ? "bloque" : "bloques";
     document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", +c.dataset.w === cfg.work && +c.dataset.r === cfg.rest));
     try { localStorage.setItem("intervalos", JSON.stringify(cfg)); } catch (e) {}
   }
   function set(k, v) { cfg[k] = clamp(k, v); render(); }
 
   document.querySelectorAll(".round").forEach((b) => b.addEventListener("click", () => set(b.dataset.k, cfg[b.dataset.k] + +b.dataset.d)));
-  for (const k of ["work", "rest", "rounds"]) {
+  for (const k of KEYS) {
     $(k).addEventListener("input", (e) => { if (e.target.value !== "") { cfg[k] = clamp(k, e.target.value); render(); } });
     $(k).addEventListener("blur", () => set(k, $(k).value));
     $(k).addEventListener("focus", (e) => e.target.select());
@@ -259,25 +278,28 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
   let plan = [], idx = 0, endAt = 0, remainingWhenPaused = 0, paused = false, timer = null, lastWhole = null, wake = null;
 
   function buildPlan() {
-    plan = [{ type: "prep", dur: PREP, round: 1 }];
-    for (let r = 1; r <= cfg.rounds; r++) {
-      plan.push({ type: "work", dur: cfg.work, round: r });
-      if (r < cfg.rounds && cfg.rest > 0) plan.push({ type: "rest", dur: cfg.rest, round: r });
+    plan = [{ type: "prep", dur: PREP, round: 1, block: 1 }];
+    for (let b = 1; b <= cfg.blocks; b++) {
+      for (let r = 1; r <= cfg.rounds; r++) {
+        plan.push({ type: "work", dur: cfg.work, round: r, block: b });
+        if (r < cfg.rounds && cfg.rest > 0) plan.push({ type: "rest", dur: cfg.rest, round: r, block: b });
+      }
+      if (b < cfg.blocks && cfg.longRest > 0) plan.push({ type: "long", dur: cfg.longRest, round: cfg.rounds, block: b });
     }
   }
-  const LABEL = { prep: "Preparate", work: "Trabajo", rest: "Descanso", done: "¡Listo!" };
+  const LABEL = { prep: "Preparate", work: "Trabajo", rest: "Descanso", long: "Pausa larga", done: "¡Listo!" };
 
   function enter(i) {
     idx = i; lastWhole = null;
     const p = plan[i];
     endAt = performance.now() + p.dur * 1000;
     const run = $("run");
-    run.classList.remove("prep", "work", "rest", "done");
+    run.classList.remove("prep", "work", "rest", "long", "done");
     run.classList.add(p.type);
     $("phaseLbl").textContent = LABEL[p.type];
-    $("roundLbl").textContent = "Serie " + p.round + " de " + cfg.rounds;
+    $("roundLbl").textContent = (cfg.blocks > 1 ? "Bloque " + p.block + "/" + cfg.blocks + " · Serie " + p.round + "/" + cfg.rounds : "Serie " + p.round + " de " + cfg.rounds);
     const nx = plan[i + 1];
-    $("nextLbl").textContent = nx ? "Sigue: " + LABEL[nx.type].toLowerCase() + " " + fmt(nx.dur) : "Última";
+    $("nextLbl").textContent = !nx ? "Última" : p.type === "long" ? "Sigue: bloque " + nx.block + " de " + cfg.blocks : "Sigue: " + LABEL[nx.type].toLowerCase() + " " + fmt(nx.dur);
     tick();
   }
 
@@ -307,7 +329,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
     const nextIdx = idx + 1;
     if (nextIdx >= plan.length) { SOUND.done(); finish(); return; }
     if (p.type === "work") SOUND.endWork();
-    else SOUND.endRest(); // rest or prep ending -> go
+    else SOUND.endRest(); // rest, long pause or prep ending -> go
     enter(nextIdx);
   }
 
@@ -315,10 +337,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--work); outl
     clearInterval(timer); timer = null;
     idx = plan.length;
     const run = $("run");
-    run.classList.remove("prep", "work", "rest"); run.classList.add("done");
+    run.classList.remove("prep", "work", "rest", "long"); run.classList.add("done");
     $("phaseLbl").textContent = LABEL.done;
-    $("clock").textContent = cfg.rounds;
-    $("nextLbl").textContent = "series completadas · " + fmt(cfg.work * cfg.rounds + cfg.rest * (cfg.rounds - 1));
+    $("clock").textContent = cfg.rounds * cfg.blocks;
+    $("nextLbl").textContent = "series completadas" + (cfg.blocks > 1 ? " en " + cfg.blocks + " bloques" : "") + " · " + fmt(totalTime());
     $("roundLbl").textContent = "Terminado";
     $("leftLbl").textContent = "0:00";
     $("bar").style.width = "100%";
